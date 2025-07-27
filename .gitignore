@@ -1,0 +1,9 @@
+.eggs
+.pytest_cache
+.ruff_cache
+.venv
+build
+
+**/__pycache__/
+**/**.so
+pycolumns.egg-info

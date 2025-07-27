@@ -1,0 +1,26 @@
+[project]
+name = "pycolumns"
+dynamic = ["version"]
+description = "A simple, efficient, pythonic column data store"
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "blosc>=1.11.3",
+    "numpy>=2.3.2",
+]
+
+[dependency-groups]
+dev = [
+    "pip>=25.1.1",
+    "pytest>=8.4.1",
+    "ruff>=0.12.5",
+    "setuptools>=80.9.0",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = { attr = "pycolumns.__version__" }
