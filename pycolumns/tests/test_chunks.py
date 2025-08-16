@@ -1,8 +1,8 @@
 import pytest
 
 
-@pytest.mark.parametrize('compression', [False, True])
-@pytest.mark.parametrize('dtype', ['i8', 'f4', 'U3'])
+@pytest.mark.parametrize("compression", [False, True])
+@pytest.mark.parametrize("dtype", ["i8", "f4", "U3"])
 def test_chunks(compression, dtype):
     import os
     import tempfile
@@ -14,9 +14,9 @@ def test_chunks(compression, dtype):
 
     rng = np.random.RandomState(seed)
 
-    if dtype[0] == 'i':
+    if dtype[0] == "i":
         data = np.arange(num, dtype=dtype)
-    elif dtype[0] == 'U':
+    elif dtype[0] == "U":
         data = np.zeros(num, dtype=dtype)
         data[:] = [str(i) for i in range(num)]
     else:
@@ -24,15 +24,15 @@ def test_chunks(compression, dtype):
 
     # small chunksize to guarantee we cross chunks
     row_chunksize = 10
-    chunksize = f'{row_chunksize}r'
+    chunksize = f"{row_chunksize}r"
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        fname = os.path.join(tmpdir, 'test.array')
-        chunks_fname = os.path.join(tmpdir, 'test.chunks')
+        fname = os.path.join(tmpdir, "test.array")
+        chunks_fname = os.path.join(tmpdir, "test.chunks")
 
-        with open(fname, 'w') as fobj:  # noqa
+        with open(fname, "w") as fobj:  # noqa
             pass
-        with open(chunks_fname, 'w') as fobj:  # noqa
+        with open(chunks_fname, "w") as fobj:  # noqa
             pass
 
         with Chunks(
@@ -41,20 +41,19 @@ def test_chunks(compression, dtype):
             dtype=data.dtype,
             chunksize=chunksize,
             compression=compression,
-            mode='w+',
+            mode="w+",
             verbose=True,
         ) as col:
-
-            print('-' * 70)
-            print('before append')
+            print("-" * 70)
+            print("before append")
             print(col)
 
             col.append(data)
             assert col.nchunks > 1
             assert col.row_chunksize == row_chunksize
 
-            print('-' * 70)
-            print('before append')
+            print("-" * 70)
+            print("before append")
             print(col)
 
             indata = col[:]

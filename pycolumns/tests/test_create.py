@@ -1,12 +1,16 @@
+from __future__ import annotations
+
 import pytest
 
 
-@pytest.mark.parametrize('cache_mem', ['1g', '10k'])
-@pytest.mark.parametrize('compression', [False, True])
-@pytest.mark.parametrize('verbose', [True, False])
-@pytest.mark.parametrize('fromdict', [False, True])
-@pytest.mark.parametrize('from_array', [False, True])
-def test_create(cache_mem, compression, verbose, fromdict, from_array):
+@pytest.mark.parametrize("cache_mem", ["1g", "10k"])
+@pytest.mark.parametrize("compression", [False, True])
+@pytest.mark.parametrize("verbose", [True, False])
+@pytest.mark.parametrize("fromdict", [False, True])
+@pytest.mark.parametrize("from_array", [False, True])
+def test_create(
+    cache_mem: str, compression: bool, verbose: bool, fromdict: bool, from_array: bool
+) -> None:
     """
     cache_mem of 0.01 will force use of mergesort
     """
@@ -21,21 +25,22 @@ def test_create(cache_mem, compression, verbose, fromdict, from_array):
 
     rng = np.random.RandomState(seed)
 
-    dtype = [('id', 'i8'), ('rand', 'f4'), ('scol', 'U5')]
+    dtype = [("id", "i8"), ("rand", "f4"), ("scol", "U5")]
     data = np.zeros(num, dtype=dtype)
-    data['id'] = np.arange(num)
-    data['rand'] = rng.uniform(size=num)
-    data['scol'] = [str(val) for val in data['id']]
+    data["id"] = np.arange(num)
+    data["rand"] = rng.uniform(size=num)
+    data["scol"] = [str(val) for val in data["id"]]
 
     if compression:
-        ccols = ['id', 'scol']
+        ccols = ["id", "scol"]
     else:
         ccols = None
 
     if fromdict:
         ddict = {}
-        for name in data.dtype.names:
-            ddict[name] = data[name]
+        if data.dtype.names is not None:
+            for name in data.dtype.names:
+                ddict[name] = data[name]
         schema = TableSchema.from_array(ddict, compression=ccols)
     else:
         schema = TableSchema.from_array(data, compression=ccols)
@@ -43,8 +48,7 @@ def test_create(cache_mem, compression, verbose, fromdict, from_array):
     print(schema)
 
     with tempfile.TemporaryDirectory() as tmpdir:
-
-        cdir = os.path.join(tmpdir, 'test.cols')
+        cdir = os.path.join(tmpdir, "test.cols")
         cols = Columns.create(cdir, cache_mem=cache_mem, verbose=verbose)
 
         assert cols.dir == cdir
@@ -63,49 +67,53 @@ def test_create(cache_mem, compression, verbose, fromdict, from_array):
             cols.create_table(schema=schema)
             cols.append(append_data)
 
-        assert len(cols.names) == len(data.dtype.names)
-        meta = {'version': '0.1', 'seeing': 0.9}
-        cols.create_meta('metadata', meta)
+        names_count = len(data.dtype.names) if data.dtype.names is not None else 0
+        assert len(cols.names) == names_count
+        meta = {"version": "0.1", "seeing": 0.9}
+        cols.create_meta("metadata", meta)
 
-        assert cols.meta['metadata'].read() == meta
+        assert cols.meta["metadata"].read() == meta
 
-        newd = {'x': 5, 'name': 'joe'}
+        newd = {"x": 5, "name": "joe"}
         meta.update(newd)
-        cols.meta['metadata'].update(newd)
-        assert cols.meta['metadata'].read() == meta
+        cols.meta["metadata"].update(newd)
+        assert cols.meta["metadata"].read() == meta
 
         ncols = Columns(cdir)
-        assert ncols.meta['metadata'].read() == meta
+        assert ncols.meta["metadata"].read() == meta
 
         # after appending, verify is run, but let's double check
-        for name in data.dtype.names:
-            assert cols[name].size == num
-            assert cols[name].verbose == verbose
+        if data.dtype.names is not None:
+            for name in data.dtype.names:
+                assert cols[name].size == num
+                assert cols[name].verbose == verbose
             assert cols[name].cache_mem == cache_mem
 
         indata = cols.read()
-        for name in data.dtype.names:
-            assert np.all(data[name] == indata[name])
+        if data.dtype.names is not None:
+            for name in data.dtype.names:
+                assert np.all(data[name] == indata[name])
 
-        for name in data.dtype.names:
-            tdata = cols[name][:]
-            assert np.all(data[name] == tdata)
+        if data.dtype.names is not None:
+            for name in data.dtype.names:
+                tdata = cols[name][:]
+                assert np.all(data[name] == tdata)
 
         # make sure we can append more data
         cols.append(data)
-        assert cols['id'].size == num * 2
-        assert cols['rand'].size == num * 2
-        assert cols['scol'].size == num * 2
+        assert cols["id"].size == num * 2
+        assert cols["rand"].size == num * 2
+        assert cols["scol"].size == num * 2
 
         # don't allow appending with new columns
         with pytest.raises(ValueError):
-            bad_data = np.zeros(3, dtype=[('blah', 'f4')])
+            bad_data = np.zeros(3, dtype=[("blah", "f4")])
             cols.append(bad_data)
 
         with pytest.raises(ValueError):
             bad_data = np.zeros(
                 3,
-                dtype=dtype + [('extra', 'i2')],
+                dtype=dtype + [("extra", "i2")],
             )
             cols.append(bad_data)
 
@@ -125,21 +133,20 @@ def test_create_column():
 
     rng = np.random.RandomState(seed)
 
-    dtype = [('id', 'i8'), ('rand', 'f4'), ('scol', 'U5')]
+    dtype = [("id", "i8"), ("rand", "f4"), ("scol", "U5")]
     data = np.zeros(num, dtype=dtype)
-    data['id'] = np.arange(num)
-    data['rand'] = rng.uniform(size=num)
-    data['scol'] = [str(val) for val in data['id']]
+    data["id"] = np.arange(num)
+    data["rand"] = rng.uniform(size=num)
+    data["scol"] = [str(val) for val in data["id"]]
 
-    ccols = ['id', 'scol']
+    ccols = ["id", "scol"]
 
     schema = TableSchema.from_array(data, compression=ccols)
 
     print(schema)
 
     with tempfile.TemporaryDirectory() as tmpdir:
-
-        cdir = os.path.join(tmpdir, 'test.cols')
+        cdir = os.path.join(tmpdir, "test.cols")
         cols = Columns.create_from_array(
             cdir,
             data,
@@ -147,30 +154,33 @@ def test_create_column():
             verbose=True,
         )
 
-        newschema = ColumnSchema('newcol', dtype='i4')
+        newschema = ColumnSchema("newcol", dtype="i4")
         cols.create_column(newschema)
-        assert cols['newcol'][:].size == cols.size
-        assert np.all(cols['newcol'][:] == 0)
+        assert cols["newcol"][:].size == cols.size
+        assert np.all(cols["newcol"][:] == 0)
 
-        newschema = ColumnSchema('news', dtype='U2')
+        newschema = ColumnSchema("news", dtype="U2")
         cols.create_column(newschema)
-        assert cols['news'][:].size == cols.size
-        assert np.all(cols['news'][:] == '')
+        assert cols["news"][:].size == cols.size
+        assert np.all(cols["news"][:] == "")
 
-        newschema = ColumnSchema('fcol', dtype='U2', fill_value='-')
+        newschema = ColumnSchema("fcol", dtype="U2", fill_value="-")
         cols.create_column(newschema)
-        assert np.all(cols['fcol'][:] == '-')
+        assert np.all(cols["fcol"][:] == "-")
 
-        newschema = ColumnSchema('x9', dtype='f4', fill_value=9.5)
+        newschema = ColumnSchema("x9", dtype="f4", fill_value=9.5)
         cols.create_column(newschema)
-        assert np.all(cols['x9'][:] == 9.5)
+        assert np.all(cols["x9"][:] == 9.5)
 
-        newschema = ColumnSchema('ss', dtype='S3', fill_value='yes')
+        newschema = ColumnSchema("ss", dtype="S3", fill_value="yes")
         cols.create_column(newschema)
-        assert np.all(cols['ss'][:] == b'yes')
+        assert np.all(cols["ss"][:] == b"yes")
 
         newschema = ColumnSchema(
-            'scomp', dtype='U2', compression=True, fill_value='hi',
+            "scomp",
+            dtype="U2",
+            compression=True,
+            fill_value="hi",
         )
         cols.create_column(newschema)
-        assert np.all(cols['scomp'][:] == 'hi')
+        assert np.all(cols["scomp"][:] == "hi")

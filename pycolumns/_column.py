@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import os
+from typing import Union
 import numpy as np
-from . import _column_pywrap
+from . import _column_pywrap  # type: ignore[attr-defined]
 from . import util
 
 
@@ -8,7 +11,14 @@ class Column(_column_pywrap.Column):
     """
     A column file, with rows of fixed length records
     """
-    def __init__(self, filename, dtype, mode='r', verbose=False):
+
+    def __init__(
+        self,
+        filename: str,
+        dtype: Union[str, np.dtype],
+        mode: str = "r",
+        verbose: bool = False,
+    ) -> None:
         self._filename = filename
         self._dtype = np.dtype(dtype)
         self._mode = mode
@@ -17,48 +27,48 @@ class Column(_column_pywrap.Column):
         self._set_nrows()
 
     @property
-    def filename(self):
+    def filename(self) -> str:
         """
         get the filename
         """
         return self._filename
 
     @property
-    def mode(self):
+    def mode(self) -> str:
         """
         get the file open mode
         """
         return self._mode
 
     @property
-    def dtype(self):
+    def dtype(self) -> np.dtype:
         """
         get the numpy dtype
         """
         return self._dtype
 
     @property
-    def size(self):
+    def size(self) -> int:
         """
         get numbe of rows
         """
         return self._nrows
 
     @property
-    def nrows(self):
+    def nrows(self) -> int:
         """
         get numbe of rows
         """
         return self._nrows
 
     @property
-    def verbose(self):
+    def verbose(self) -> bool:
         """
         get the filename
         """
         return self._verbose
 
-    def resize(self, nrows):
+    def resize(self, nrows: int) -> None:
         """
         Expand or truncate the file to num rows, filling with zeros if needed.
 
@@ -68,14 +78,14 @@ class Column(_column_pywrap.Column):
             New number of rows
         """
         if nrows < 0:
-            raise ValueError(f'cannot reduce rows to {nrows}')
+            raise ValueError(f"cannot reduce rows to {nrows}")
 
         if nrows != self.nrows:
             nbytes = nrows * self.dtype.itemsize
             self._resize_bytes(nbytes)
             self._nrows = nrows
 
-    def append(self, data):
+    def append(self, data: np.ndarray) -> None:
         """
         append data to the file
         """
@@ -85,16 +95,14 @@ class Column(_column_pywrap.Column):
 
         self._nrows += data.size
 
-    def update_row(self, row, data):
+    def update_row(self, row: int, data: np.ndarray) -> None:
         """
         Update the specified row
         """
         data = util.get_data_with_conversion(data, self.dtype)
 
         if data.size != 1:
-            raise ValueError(
-                f'attemting to update row with data of size {data.size}'
-            )
+            raise ValueError(f"attemting to update row with data of size {data.size}")
 
         super()._write_at(data, row)
 
@@ -105,9 +113,7 @@ class Column(_column_pywrap.Column):
         data = util.get_data_with_conversion(data, self.dtype)
 
         if row > self.nrows - 1:
-            raise IndexError(
-                f'attempt to write at row {row} > {self.nrows-1}'
-            )
+            raise IndexError(f"attempt to write at row {row} > {self.nrows - 1}")
 
         super()._write_at(data, row)
 
@@ -120,16 +126,12 @@ class Column(_column_pywrap.Column):
         """
         data = util.get_data_with_conversion(value, self.dtype)
         if data.size != 1:
-            raise IndexError(
-                f'cannot fill with length {data.size}'
-            )
+            raise IndexError(f"cannot fill with length {data.size}")
         super()._fill_slice(data, s.start, s.stop)
 
     def _fill_rows(self, data, rows, sortind=None):
         if data.size != 1:
-            raise IndexError(
-                f'cannot fill with length {data.size}'
-            )
+            raise IndexError(f"cannot fill with length {data.size}")
         if sortind is not None:
             super()._fill_rows_sortind(data, rows, sortind)
         else:
@@ -149,9 +151,7 @@ class Column(_column_pywrap.Column):
 
         nrows = self.nrows
         if data.size > nrows:
-            raise ValueError(
-                f'input data rows {data.size} > file nrows {nrows}'
-            )
+            raise ValueError(f"input data rows {data.size} > file nrows {nrows}")
         super()._read_slice(data, 0)
 
     def read_slice_into(self, data, s):
@@ -175,7 +175,7 @@ class Column(_column_pywrap.Column):
         s = util.extract_slice(s, self.nrows)
         nrows = s.stop - s.start
         if data.size != nrows:
-            raise ValueError(f'data size {data.size} != slice nrows {nrows}')
+            raise ValueError(f"data size {data.size} != slice nrows {nrows}")
         super()._read_slice(data, s.start)
 
     def read_rows_into(self, data, rows):
@@ -194,11 +194,12 @@ class Column(_column_pywrap.Column):
         None
         """
         from .indices import Indices
+
         self._check_dtype(data)
 
         rows_use = util.extract_rows(rows, self.nrows)
         if not isinstance(rows_use, Indices):
-            raise ValueError(f'git unexpected rows type {type(rows_use)}')
+            raise ValueError(f"git unexpected rows type {type(rows_use)}")
 
         super()._read_rows(data, rows_use)
         # super()._read_rows_pages(data, rows)
@@ -221,13 +222,12 @@ class Column(_column_pywrap.Column):
         """
         self._check_dtype(data)
         if data.ndim == 0:
-            raise ValueError('data must have ndim > 0')
+            raise ValueError("data must have ndim > 0")
 
         super()._read_row(data, row)
         # super()._read_row_pages(data, rows)
 
     def __getitem__(self, arg):
-
         # returns either Indices or slice
         # converts slice with step to indices
         rows = util.extract_rows(arg, self.nrows)
@@ -263,8 +263,8 @@ class Column(_column_pywrap.Column):
             else:
                 if nrows != len(data):
                     raise IndexError(
-                        f'mismatch slice size {nrows} and data '
-                        f'size {len(data)} when writing'
+                        f"mismatch slice size {nrows} and data "
+                        f"size {len(data)} when writing"
                     )
 
                 self.write_at(data, rows.start)
@@ -297,16 +297,12 @@ class Column(_column_pywrap.Column):
 
     def _check_row(self, row):
         if row < 0 or row > self.nrows - 1:
-            raise IndexError(
-                f'row {row} out of bounds [0, {self.nrows-1}]'
-            )
+            raise IndexError(f"row {row} out of bounds [0, {self.nrows - 1}]")
 
     def _check_dtype(self, data):
         dtype = data.dtype
         if dtype != self.dtype:
-            raise ValueError(
-                f'input dtype {dtype} != file dtype {self.dtype}'
-            )
+            raise ValueError(f"input dtype {dtype} != file dtype {self.dtype}")
 
     def _set_nrows(self):
         fsize = os.path.getsize(self.filename)
@@ -314,7 +310,7 @@ class Column(_column_pywrap.Column):
 
         if fsize % elsize != 0:
             raise ValueError(
-                f'file size {fsize} not a multiple of element size {elsize}'
+                f"file size {fsize} not a multiple of element size {elsize}"
             )
         self._nrows = fsize // elsize
 
@@ -325,26 +321,26 @@ class Column(_column_pywrap.Column):
         self.close()
 
     def __repr__(self):
-        indent = '    '
+        indent = "    "
 
         if self.dtype.names is not None:
             dt = self.dtype.descr
         else:
             dt = self.dtype.str
 
-        rep = [f'filename: {self.filename}']
-        rep += [f'mode: {self.mode}']
-        rep += [f'dtype: {dt}']
-        rep += [f'nrows: {self.nrows}']
+        rep = [f"filename: {self.filename}"]
+        rep += [f"mode: {self.mode}"]
+        rep += [f"dtype: {dt}"]
+        rep += [f"nrows: {self.nrows}"]
 
         rep = [indent + r for r in rep]
 
-        rep = ['Column:'] + rep
-        return '\n'.join(rep)
+        rep = ["Column:"] + rep
+        return "\n".join(rep)
 
 
 def read(fname, dtype, rows=None, verbose=False):
-    with Column(fname, dtype=dtype, mode='r', verbose=verbose) as col:
+    with Column(fname, dtype=dtype, mode="r", verbose=verbose) as col:
         if rows is None:
             data = col[:]
         else:
@@ -354,9 +350,9 @@ def read(fname, dtype, rows=None, verbose=False):
 
 def write(fname, data, append=True, verbose=False):
     if os.path.exists(fname) and append:
-        mode = 'r+'
+        mode = "r+"
     else:
-        mode = 'w+'
+        mode = "w+"
 
     with Column(fname, dtype=data.dtype, mode=mode, verbose=verbose) as col:
         if not col.has_header():
@@ -366,9 +362,9 @@ def write(fname, data, append=True, verbose=False):
 
 def append(fname, data, verbose=False):
     if not os.path.exists(fname):
-        mode = 'w+'
+        mode = "w+"
     else:
-        mode = 'r+'
+        mode = "r+"
 
     with Column(fname, dtype=data.dtype, mode=mode, verbose=verbose) as col:
         if not col.has_header():
@@ -378,18 +374,19 @@ def append(fname, data, verbose=False):
 
 def test():
     import tempfile
+
     with tempfile.TemporaryDirectory() as tmpdir:
         data = np.arange(20)
-        fname = os.path.join(tmpdir, 'test.col')
-        with Column(fname, dtype=data.dtype, mode='w+', verbose=True) as col:
-            print('-' * 70)
-            print('before append')
+        fname = os.path.join(tmpdir, "test.col")
+        with Column(fname, dtype=data.dtype, mode="w+", verbose=True) as col:
+            print("-" * 70)
+            print("before append")
             print(col)
 
             col.append(data)
 
-            print('-' * 70)
-            print('before append')
+            print("-" * 70)
+            print("before append")
             print(col)
 
             indata = col[:]

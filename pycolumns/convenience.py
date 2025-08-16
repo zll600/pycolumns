@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import Optional, Union, List, Dict, Any
 import numpy as np
 from .columns import Columns
 from .defaults import DEFAULT_CACHE_MEM, DEFAULT_CHUNKSIZE
@@ -5,18 +8,18 @@ from . import util
 
 
 def from_fits(
-    coldir,
-    filename,
-    ext=1,
-    native=False,
-    little=True,
-    lower=False,
-    compression=None,
-    chunksize=DEFAULT_CHUNKSIZE,
-    cache_mem=DEFAULT_CACHE_MEM,
-    verbose=False,
-    yes=False,
-):
+    coldir: str,
+    filename: str,
+    ext: Union[int, str] = 1,
+    native: bool = False,
+    little: bool = True,
+    lower: bool = False,
+    compression: Optional[Union[List[str], Dict[str, Any]]] = None,
+    chunksize: Union[str, int, Dict[str, Union[str, int]]] = DEFAULT_CHUNKSIZE,
+    cache_mem: Union[str, float] = DEFAULT_CACHE_MEM,
+    verbose: bool = False,
+    yes: bool = False,
+) -> Columns:
     """
     Create or append to a columns database, reading from the input fits file.
 
@@ -60,14 +63,14 @@ def from_fits(
     if (native and np.little_endian) or little:
         byteswap = True
         if verbose:
-            print('byteswapping')
+            print("byteswapping")
     else:
         byteswap = False
 
     with fitsio.FITS(filename, lower=lower) as fits:
         hdu = fits[ext]
 
-        one = hdu[0:0+1]
+        one = hdu[0 : 0 + 1]
 
         if byteswap:
             util.byteswap_inplace(one)
@@ -100,10 +103,9 @@ def from_fits(
             nstep += 1
 
         if verbose:
-            print('Loading %s rows from file: %s' % (nrows, filename))
+            print("Loading %s rows from file: %s" % (nrows, filename))
 
         for i in range(nstep):
-
             start = i * step
             stop = (i + 1) * step
 
@@ -112,7 +114,7 @@ def from_fits(
                 stop = nrows
 
             if verbose:
-                print(f'    {start}:{stop} of {nrows}')
+                print(f"    {start}:{stop} of {nrows}")
 
             data = hdu[start:stop]
 

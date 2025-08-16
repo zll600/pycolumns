@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import os
+from typing import Union
 import numpy as np
 from .column import Column
 from .metafile import Meta
@@ -35,28 +38,24 @@ class Columns(dict):
 
     def __init__(
         self,
-        coldir,
-        mode='r',
-        cache_mem=DEFAULT_CACHE_MEM,
-        verbose=False,
-    ):
-
-        if mode not in ['r', 'r+']:
-            raise RuntimeError(
-                'only modes r and r+ supported on Columns construction'
-            )
+        coldir: str,
+        mode: str = "r",
+        cache_mem: Union[str, float] = DEFAULT_CACHE_MEM,
+        verbose: bool = False,
+    ) -> None:
+        if mode not in ["r", "r+"]:
+            raise RuntimeError("only modes r and r+ supported on Columns construction")
 
         coldir = os.path.expandvars(coldir)
 
         if not os.path.exists(coldir):
             raise RuntimeError(
-                f'Directory {coldir} does not exist.  Use Columns.create to '
-                f'initialize'
+                f"Directory {coldir} does not exist.  Use Columns.create to initialize"
             )
 
         self._dir = coldir
         self._mode = mode
-        self._type = 'cols'
+        self._type = "cols"
         self._verbose = verbose
         self._is_updating = False
         self._cache_mem = cache_mem
@@ -64,7 +63,10 @@ class Columns(dict):
 
     @classmethod
     def create(
-        cls, coldir, cache_mem=DEFAULT_CACHE_MEM, verbose=False,
+        cls,
+        coldir,
+        cache_mem=DEFAULT_CACHE_MEM,
+        verbose=False,
         yes=False,
     ):
         """
@@ -103,26 +105,26 @@ class Columns(dict):
         if os.path.exists(coldir):
             if not yes:
                 answer = input(
-                    f'directory {coldir} already exists, are you sure '
-                    f'you want to overwrite? (y/n)'
+                    f"directory {coldir} already exists, are you sure "
+                    f"you want to overwrite? (y/n)"
                 )
-                if answer.lower() == 'y':
+                if answer.lower() == "y":
                     yes = True
 
             if not yes:
                 return
 
             if verbose:
-                print(f'removing {coldir}')
+                print(f"removing {coldir}")
 
             shutil.rmtree(coldir)
 
         if verbose:
-            print(f'creating: {coldir}')
+            print(f"creating: {coldir}")
 
         os.makedirs(coldir)
 
-        cols = Columns(coldir, mode='r+', cache_mem=cache_mem, verbose=verbose)
+        cols = Columns(coldir, mode="r+", cache_mem=cache_mem, verbose=verbose)
         return cols
 
     @classmethod
@@ -137,7 +139,6 @@ class Columns(dict):
         cache_mem=DEFAULT_CACHE_MEM,
         verbose=False,
         yes=False,
-
     ):
         """
         Initialize a new columns database and create a table from the
@@ -236,7 +237,7 @@ class Columns(dict):
         # see the TableSchema and ColumnSchema classes for more options
         """
 
-        self._check_mode_is_write('create a table')
+        self._check_mode_is_write("create a table")
 
         subdir = util.get_sub_dir(self.dir, name)
 
@@ -303,7 +304,9 @@ class Columns(dict):
         cols.from_array(array, name='data/observations/')
         """
         schema = TableSchema.from_array(
-            data, compression=compression, chunksize=chunksize,
+            data,
+            compression=compression,
+            chunksize=chunksize,
         )
         cols = self.create_table(
             schema=schema,
@@ -341,7 +344,7 @@ class Columns(dict):
         """
         Get a list of all column names
         """
-        return [c for c in self if self[c].type == 'col']
+        return [c for c in self if self[c].type == "col"]
 
     @property
     def meta_names(self):
@@ -355,7 +358,7 @@ class Columns(dict):
         """
         Get a list of the array column names
         """
-        return [c for c in self if self[c].type == 'cols']
+        return [c for c in self if self[c].type == "cols"]
 
     @property
     def type(self):
@@ -396,7 +399,7 @@ class Columns(dict):
         Return the dir basename minus any extension
         """
         bname = os.path.basename(self.dir)
-        name = '.'.join(bname.split('.')[0:-1])
+        name = ".".join(bname.split(".")[0:-1])
         return name
 
     def _load(self, verify=True):
@@ -415,28 +418,31 @@ class Columns(dict):
             if util.is_column(path):
                 name = os.path.basename(path)
                 c = Column(
-                    path, mode=self.mode,
-                    cache_mem=self.cache_mem, verbose=self.verbose,
+                    path,
+                    mode=self.mode,
+                    cache_mem=self.cache_mem,
+                    verbose=self.verbose,
                 )
                 super().__setitem__(name, c)
             else:
-
                 # will be /name for name.cols
                 # else will be name
                 name, ext = util.split_ext(path)
                 # name = util.extract_name(path)
                 # ext = util.extract_extension(path)
 
-                if self.verbose and ext in ['cols', 'json']:
-                    print(f'    loading : {name}')
+                if self.verbose and ext in ["cols", "json"]:
+                    print(f"    loading : {name}")
 
                 # only load .dict or .cols, ignore other stuff
-                if ext == 'json':
+                if ext == "json":
                     self.meta._load(path)
-                elif ext == 'cols':
+                elif ext == "cols":
                     c = Columns(
-                        path, mode=self.mode,
-                        cache_mem=self.cache_mem, verbose=self.verbose,
+                        path,
+                        mode=self.mode,
+                        cache_mem=self.cache_mem,
+                        verbose=self.verbose,
                     )
                     cname = util.get_sub_name(name)
                     super().__setitem__(cname, c)
@@ -456,7 +462,7 @@ class Columns(dict):
 
         for c in self.keys():
             col = self[c]
-            if col.type == 'col':
+            if col.type == "col":
                 this_nrows = col.nrows
                 if first:
                     self._nrows = this_nrows
@@ -464,8 +470,8 @@ class Columns(dict):
                 else:
                     if this_nrows != self.nrows:
                         raise ValueError(
-                            'column size mismatch for %s '
-                            'got %d vs %d' % (c, this_nrows, self.nrows)
+                            "column size mismatch for %s "
+                            "got %d vs %d" % (c, this_nrows, self.nrows)
                         )
 
     def create_column(self, schema):
@@ -495,12 +501,12 @@ class Columns(dict):
         data: Data that can be stored as JSON
             e.g. a dict, list etc.
         """
-        self._check_mode_is_write('create metadata')
+        self._check_mode_is_write("create metadata")
 
         if name in self.meta_names:
             raise ValueError("column '%s' already exists" % name)
 
-        path = util.get_filename(dir=self.dir, name=name, ext='json')
+        path = util.get_filename(dir=self.dir, name=name, ext="json")
         self.meta._load(path)
         self.meta[name].write(data)
 
@@ -529,7 +535,7 @@ class Columns(dict):
         self.verify()
 
     def clear(self):
-        raise RuntimeError('clear() not supported on Columns')
+        raise RuntimeError("clear() not supported on Columns")
 
     def _clear_all(self, name=None):
         """
@@ -562,7 +568,7 @@ class Columns(dict):
             If set to True, the new columns are filled out to the current nrows
         """
 
-        self._check_mode_is_write('create columns')
+        self._check_mode_is_write("create columns")
 
         # Try to convert to schema
         if not isinstance(schema, TableSchema):
@@ -570,26 +576,26 @@ class Columns(dict):
 
         for name, this in schema.items():
             if self.verbose:
-                print('    creating:', name)
+                print("    creating:", name)
 
             coldir = util.get_column_dir(self.dir, name)
             if not os.path.exists(coldir):
                 os.makedirs(coldir)
 
-            metafile = util.get_filename(coldir, name, 'meta')
+            metafile = util.get_filename(coldir, name, "meta")
             if os.path.exists(metafile):
-                raise RuntimeError(f'column {name} already exists')
+                raise RuntimeError(f"column {name} already exists")
 
             util.write_json(metafile, this)
 
-            dfile = util.get_filename(coldir, name, 'array')
-            with open(dfile, 'w') as fobj:  # noqa
+            dfile = util.get_filename(coldir, name, "array")
+            with open(dfile, "w") as fobj:  # noqa
                 # just to create the empty file
                 pass
 
-            if 'compression' in this:
-                cfile = util.get_filename(coldir, name, 'chunks')
-                with open(cfile, 'w') as fobj:  # noqa
+            if "compression" in this:
+                cfile = util.get_filename(coldir, name, "chunks")
+                with open(cfile, "w") as fobj:  # noqa
                     # just to create the empty file
                     pass
 
@@ -612,7 +618,7 @@ class Columns(dict):
             If set to True, verify all the columns have the same number of rows
             after appending.  Default True
         """
-        self._check_mode_is_write('append to a table')
+        self._check_mode_is_write("append to a table")
 
         names = util.get_data_names(data)
 
@@ -622,8 +628,8 @@ class Columns(dict):
             column_names = set(self.column_names)
             if in_names != column_names:
                 raise ValueError(
-                    f'input columns {in_names} '
-                    f'do not match existing table columns {column_names}'
+                    f"input columns {in_names} "
+                    f"do not match existing table columns {column_names}"
                 )
 
         for name in names:
@@ -640,7 +646,7 @@ class Columns(dict):
         """
 
         if name not in self:
-            raise RuntimeError(f'column {name} does not exist')
+            raise RuntimeError(f"column {name} does not exist")
 
         self[name]._append(data, update_index=not self.is_updating)
 
@@ -653,7 +659,7 @@ class Columns(dict):
             cols.append(data1)
             cols.append(data2)
         """
-        self._check_mode_is_write('enter updating context')
+        self._check_mode_is_write("enter updating context")
         self._is_updating = True
         return self
 
@@ -667,7 +673,7 @@ class Columns(dict):
         vacuum combines all data back together in a single contiguous file.
         """
 
-        self._check_mode_is_write('vacuum')
+        self._check_mode_is_write("vacuum")
 
         for name in self.column_names:
             self[name].vacuum()
@@ -683,11 +689,11 @@ class Columns(dict):
         """
         import shutil
 
-        self._check_mode_is_write('delete data')
+        self._check_mode_is_write("delete data")
 
         if not yes:
-            answer = input('really delete all data? (y/n) ')
-            if answer.lower() == 'y':
+            answer = input("really delete all data? (y/n) ")
+            if answer.lower() == "y":
                 yes = True
 
         if not yes:
@@ -700,7 +706,7 @@ class Columns(dict):
         for name in self.meta:
             self.delete_meta(name, yes=True)
 
-        print('removing:', self.dir)
+        print("removing:", self.dir)
         shutil.rmtree(self.dir)
 
     def delete_meta(self, name, yes=False):
@@ -714,18 +720,18 @@ class Columns(dict):
         yes: bool
             If True, don't prompt for confirmation
         """
-        self._check_mode_is_write('delete metadata')
+        self._check_mode_is_write("delete metadata")
 
         if name not in self.meta:
             print("cannot delete dict '%s', it does not exist" % name)
 
         if not yes:
             answer = input("really delete dict '%s'? (y/n) " % name)
-            if answer.lower() == 'y':
+            if answer.lower() == "y":
                 yes = True
 
         if yes:
-            print(f'Removing data for dict: {name}')
+            print(f"Removing data for dict: {name}")
             fname = self.meta[name].filename
             if os.path.exists(fname):
                 os.remove(fname)
@@ -744,14 +750,15 @@ class Columns(dict):
             If True, don't prompt for confirmation
         """
         import shutil
-        self._check_mode_is_write('delete entries')
+
+        self._check_mode_is_write("delete entries")
 
         if name not in self.names:
             print("cannot delete entry '%s', it does not exist" % name)
 
         if not yes:
             answer = input("really delete entry '%s'? (y/n) " % name)
-            if answer.lower() == 'y':
+            if answer.lower() == "y":
                 yes = True
 
         if not yes:
@@ -760,8 +767,8 @@ class Columns(dict):
         entry = self[name]
         entry._close()
 
-        if entry.type == 'cols':
-            print(f'Removing data for sub columns: {name}')
+        if entry.type == "cols":
+            print(f"Removing data for sub columns: {name}")
 
             # have the sub cols remove data in case the subcols dir is a sym
             # link
@@ -773,13 +780,13 @@ class Columns(dict):
 
         else:
             # remove individual files in case it the directory is a sym link
-            print(f'Removing data for entry: {name}')
+            print(f"Removing data for entry: {name}")
             for fname in entry.filenames:
                 if os.path.exists(fname):
-                    print(f'    Removing: {fname}')
+                    print(f"    Removing: {fname}")
                     os.remove(fname)
 
-            print(f'Removing: {entry.dir}')
+            print(f"Removing: {entry.dir}")
             shutil.rmtree(entry.dir)
 
         del self[name]
@@ -819,19 +826,17 @@ class Columns(dict):
             data = {}
 
             for colname in columns:
-
                 if self.verbose:
-                    print('    reading column: %s' % colname)
+                    print("    reading column: %s" % colname)
 
                 # just read the data and put in dict, simpler than below
                 col = self[colname]
-                if col.type == 'col':
+                if col.type == "col":
                     data[colname] = col.read(rows=rows)
                 else:
                     data[colname] = col.read()
 
         else:
-
             if isinstance(rows, slice):
                 n_rows2read = rows.stop - rows.start
             else:
@@ -844,14 +849,14 @@ class Columns(dict):
 
             for colname in columns:
                 if self.verbose:
-                    print('    reading column: %s' % colname)
+                    print("    reading column: %s" % colname)
 
                 col = self[colname]
                 data[colname][:] = col.read(rows=rows)
 
         return data
 
-    def list(self, full=False, isroot=True, indent=''):
+    def list(self, full=False, isroot=True, indent=""):
         """
         List the directory structure
 
@@ -866,24 +871,24 @@ class Columns(dict):
             nc = len(self.column_names)
             nm = len(self.meta)
             if nc > 0 or nm > 0:
-                ln = ['root has']
+                ln = ["root has"]
                 if nc > 0:
-                    ln += [f'{nc} columns']
+                    ln += [f"{nc} columns"]
                 if nm > 0:
-                    ln += [f'{nm} metadata']
-                ln = ' '.join(ln)
+                    ln += [f"{nm} metadata"]
+                ln = " ".join(ln)
                 print(ln)
 
         if full:
             for name in self.column_names:
-                print(indent + '- ' + name)
+                print(indent + "- " + name)
             for name in self.meta:
-                print(indent + '- ' + '{%s}' % name)
+                print(indent + "- " + "{%s}" % name)
 
         for name in self.names:
-            if name[-1] == '/':
+            if name[-1] == "/":
                 print(indent + name)
-                self[name].list(isroot=False, full=full, indent=indent + '  ')
+                self[name].list(isroot=False, full=full, indent=indent + "  ")
 
     def _extract_dtype(self, columns):
         dtype = []
@@ -916,8 +921,8 @@ class Columns(dict):
         return columns
 
     def _check_mode_is_write(self, action):
-        if self.mode != 'r+':
-            raise IOError(f'cannot {action} in read only mode')
+        if self.mode != "r+":
+            raise IOError(f"cannot {action} in read only mode")
 
     def __contains__(self, name):
         try:
@@ -927,7 +932,6 @@ class Columns(dict):
             return False
 
     def __getitem__(self, arg):
-
         if not np.isscalar(arg):
             if util.iscols(arg):
                 return _ColumnSubset(self, arg)
@@ -938,25 +942,25 @@ class Columns(dict):
 
         notfound = False
 
-        if name in ['.', './']:
+        if name in [".", "./"]:
             return self
 
         # take off leading ./
-        if name not in self.names and len(name) > 2 and name[:2] == './':
+        if name not in self.names and len(name) > 2 and name[:2] == "./":
             name = name[2:]
 
         if name not in self.names:
-            ns = name.split('/')
+            ns = name.split("/")
             if len(ns) == 1:
                 # not a sub-columns, so not found
                 notfound = True
-            elif len(ns) == 2 and ns[1] == '':
+            elif len(ns) == 2 and ns[1] == "":
                 # it was something like 'sub/'
                 notfound = True
             else:
                 # It is multi-level
-                first = f'{ns[0]}/'
-                rest = '/'.join(ns[1:])
+                first = f"{ns[0]}/"
+                rest = "/".join(ns[1:])
 
                 # let it pass on down the chain
                 try:
@@ -964,7 +968,7 @@ class Columns(dict):
                 except IndexError:
                     notfound = True
         if notfound:
-            raise IndexError(f'entry {name} not found')
+            raise IndexError(f"entry {name} not found")
 
         return super().__getitem__(name)
 
@@ -973,21 +977,21 @@ class Columns(dict):
         Only supported for dict.  For Column you need to do
         cols[name][ind] = 3 etc.
         """
-        self._check_mode_is_write('update data')
+        self._check_mode_is_write("update data")
 
         item = self[name]
 
-        if item.type == 'col':
+        if item.type == "col":
             # let the error handling occur in Column
             self[name][:] = data
-        elif item.type == 'cols':
+        elif item.type == "cols":
             raise TypeError(
                 f'Attempt to replace entire sub Columns "{name}". '
-                f'If you are trying to set items for a Column inside '
-                f'{name}, use cols[{name}][indices] = data etc.'
+                f"If you are trying to set items for a Column inside "
+                f"{name}, use cols[{name}][indices] = data etc."
             )
         else:
-            raise TypeError('Columns object does not support item assignment')
+            raise TypeError("Columns object does not support item assignment")
 
     def __enter__(self):
         self._is_updating = True
@@ -1007,35 +1011,35 @@ class Columns(dict):
         columns
         """
         ncols = len(self.column_names)
-        indent = '  '
+        indent = "  "
         s = []
-        s = ['dir: '+self.dir]
-        s = ['mode: '+self.mode]
-        if ncols > 0 and hasattr(self, '_nrows'):
-            s += ['nrows: %s' % self.nrows]
+        s = ["dir: " + self.dir]
+        s = ["mode: " + self.mode]
+        if ncols > 0 and hasattr(self, "_nrows"):
+            s += ["nrows: %s" % self.nrows]
 
         metas = []
         if len(self.meta_names) > 0:
-            metas += ['Metadata:']
-            metas += ['  %-15s' % ('name',)]
-            metas += ['  '+'-'*(28)]
-            metas += ['  '+n for n in self.meta_names]
+            metas += ["Metadata:"]
+            metas += ["  %-15s" % ("name",)]
+            metas += ["  " + "-" * (28)]
+            metas += ["  " + n for n in self.meta_names]
 
         subcols = []
         if len(self.sub_table_names) > 0:
-            subcols += ['Sub Tables:']
-            subcols += ['  %-15s' % ('name',)]
-            subcols += ['  '+'-'*(28)]
-            subcols += ['  '+n for n in self.sub_table_names]
+            subcols += ["Sub Tables:"]
+            subcols += ["  %-15s" % ("name",)]
+            subcols += ["  " + "-" * (28)]
+            subcols += ["  " + n for n in self.sub_table_names]
 
         acols = []
 
         column_names = self.column_names
         if len(column_names) > 0:
-            acols += ['Table Columns:']
-            cnames = 'name', 'dtype', 'comp', 'index'
-            acols += ['  %-15s %6s %7s %-6s' % cnames]
-            acols += ['  '+'-'*(35)]
+            acols += ["Table Columns:"]
+            cnames = "name", "dtype", "comp", "index"
+            acols += ["  %-15s %6s %7s %-6s" % cnames]
+            acols += ["  " + "-" * (35)]
 
             for name in column_names:
                 c = self[name]
@@ -1044,24 +1048,24 @@ class Columns(dict):
 
                 if len(name) > 15:
                     # name_entry = ['  %s' % name]
-                    name_entry = [f'  {name}\n' + ' '*19]
+                    name_entry = [f"  {name}\n" + " " * 19]
                     # s += ['%23s' % (c.type,)]
                 else:
-                    name_entry = ['  %-15s' % c.name]
+                    name_entry = ["  %-15s" % c.name]
 
-                if 'compression' in c.meta:
-                    comp = c.meta['compression']['cname']
+                if "compression" in c.meta:
+                    comp = c.meta["compression"]["cname"]
                 else:
-                    comp = 'None'
+                    comp = "None"
 
                 acols += name_entry
                 c_dtype = c.dtype.descr[0][1]
-                acols[-1] += ' %6s' % c_dtype
-                acols[-1] += ' %7s' % comp
-                acols[-1] += ' %-6s' % self[name].has_index
+                acols[-1] += " %6s" % c_dtype
+                acols[-1] += " %7s" % comp
+                acols[-1] += " %-6s" % self[name].has_index
 
         s = [indent + tmp for tmp in s]
-        s = ['Columns: '] + s
+        s = ["Columns: "] + s
 
         if len(acols) > 3:
             s += [indent]
@@ -1078,13 +1082,14 @@ class Columns(dict):
             subcols = [indent + tmp for tmp in subcols]
             s += subcols
 
-        return '\n'.join(s)
+        return "\n".join(s)
 
 
 class _MetaSet(dict):
     """
     Manage a set of Meta
     """
+
     def __init__(self, coldir, mode, verbose):
         self._coldir = coldir
         self._mode = mode
@@ -1092,28 +1097,28 @@ class _MetaSet(dict):
 
     def __getitem__(self, name):
         if name not in self:
-            raise RuntimeError(f'dict {name} not found')
+            raise RuntimeError(f"dict {name} not found")
 
         return super().__getitem__(name)
 
     def __setitem__(self, name, data):
         raise TypeError(
-            f'To write to dict {name}, use meta[{name}].write(data) '
-            f'or meta[{name}].update(data)'
+            f"To write to dict {name}, use meta[{name}].write(data) "
+            f"or meta[{name}].update(data)"
         )
 
     def _load(self, path):
         name = util.extract_name(path)
         if name in self:
-            raise RuntimeError(f'dict {name} already exists')
+            raise RuntimeError(f"dict {name} already exists")
 
         c = Meta(path, mode=self._mode, verbose=self._verbose)
         super().__setitem__(name, c)
 
     def __repr__(self):
-        s = ['Metadata:']
-        s += ['  '+n for n in self]
-        return '\n'.join(s)
+        s = ["Metadata:"]
+        s += ["  " + n for n in self]
+        return "\n".join(s)
 
 
 class _ColumnSubset(object):

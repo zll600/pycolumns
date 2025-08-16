@@ -1,6 +1,9 @@
+from __future__ import annotations
+
+from typing import Union, List, Optional
 import numpy as np
 from . import util
-from ._column import Column as CColumn
+from ._column import Column as CColumn  # type: ignore[attr-defined]
 from .chunks import Chunks
 from .defaults import DEFAULT_CACHE_MEM
 
@@ -63,21 +66,20 @@ class Column(object):
     >>> ind = col1.between(15,25) | (col2 != 66)
     >>> ind = col1.between(15,25) & (col2 != 66) & (col3 > 5)
     """
+
     def __init__(
         self,
-        coldir,
-        mode='r',
-        cache_mem=DEFAULT_CACHE_MEM,
-        verbose=False,
-    ):
+        coldir: str,
+        mode: str = "r",
+        cache_mem: Union[str, float] = DEFAULT_CACHE_MEM,
+        verbose: bool = False,
+    ) -> None:
         """
         initialize the meta data, and possibly load the mmap
         """
 
-        if mode not in ['r', 'r+']:
-            raise RuntimeError(
-                'only modes r and r+ supported on Column construction'
-            )
+        if mode not in ["r", "r+"]:
+            raise RuntimeError("only modes r and r+ supported on Column construction")
 
         self._dir = coldir
         self._mode = mode
@@ -85,14 +87,17 @@ class Column(object):
         self._cache_mem_gb = util.convert_to_gigabytes(cache_mem)
         self._verbose = verbose
         self._is_updating = False
+        
+        # Type annotation for _col
+        self._col: Optional[Union[Chunks, CColumn]] = None
         self.reload()
 
-    def _close(self):
-        if hasattr(self, '_col') and self._col is not None:
+    def _close(self) -> None:
+        if hasattr(self, "_col") and self._col is not None:
             self._col.close()
             self._col = None
 
-    def reload(self):
+    def reload(self) -> None:
         """
         load, or reload all meta data and reopen/open files
         """
@@ -101,26 +106,24 @@ class Column(object):
 
         path_info = util.get_colfiles(self.dir)
 
-        self._meta_filename = path_info['meta']
-        self._array_filename = path_info['array']
-        self._index_filename = path_info['index']
-        self._index1_filename = path_info['index1']
-        self._sorted_filename = path_info['sorted']
-        self._chunks_filename = path_info['chunks']
-        self._name = path_info['name']
+        self._meta_filename = path_info["meta"]
+        self._array_filename = path_info["array"]
+        self._index_filename = path_info["index"]
+        self._index1_filename = path_info["index1"]
+        self._sorted_filename = path_info["sorted"]
+        self._chunks_filename = path_info["chunks"]
+        self._name = path_info["name"]
 
-        if self.dir != path_info['dir']:
-            raise ValueError(
-                f'mismatch dir {dir} and path_info {path_info["dir"]}'
-            )
+        if self.dir != path_info["dir"]:
+            raise ValueError(f"mismatch dir {dir} and path_info {path_info['dir']}")
 
         self._meta = util.read_json(self.meta_filename)
 
-        self._type = 'col'
+        self._type = "col"
         self._ext = 1
-        self._dtype = np.dtype(self._meta['dtype'])
-        self._index_dtype = np.dtype('i8')
-        self._index1_dtype = np.dtype([('index', 'i8'), ('value', self.dtype)])
+        self._dtype = np.dtype(self._meta["dtype"])
+        self._index_dtype = np.dtype("i8")
+        self._index1_dtype = np.dtype([("index", "i8"), ("value", self.dtype)])
 
         self._open()
 
@@ -128,43 +131,43 @@ class Column(object):
         self._init_index()
 
     @property
-    def name(self):
+    def name(self) -> str:
         """
         get the name type of the column
         """
         return self._name
 
     @property
-    def dir(self):
+    def dir(self) -> str:
         """
         get the directory holding the file
         """
         return self._dir
 
     @property
-    def mode(self):
+    def mode(self) -> str:
         """
         Get the open mode
         """
         return self._mode
 
     @property
-    def verbose(self):
+    def verbose(self) -> bool:
         return self._verbose
 
     @property
-    def is_updating(self):
+    def is_updating(self) -> bool:
         return self._is_updating
 
     @property
-    def type(self):
+    def type(self) -> str:
         """
         get the data type of the column
         """
         return self._type
 
     @property
-    def filenames(self):
+    def filenames(self) -> List[str]:
         """
         get a list of paths to all files associated with
         this column
@@ -175,7 +178,7 @@ class Column(object):
         ]
 
         meta = self.meta
-        if 'compression' in meta and meta['compression']:
+        if "compression" in meta and meta["compression"]:
             fnames += [self.chunks_filename]
 
         if self.has_index:
@@ -291,20 +294,20 @@ class Column(object):
 
     def _open(self):
         meta = self._meta
-        if 'compression' in meta and meta['compression']:
+        if "compression" in meta and meta["compression"]:
             self._col = Chunks(
                 filename=self.array_filename,
                 chunks_filename=self.chunks_filename,
-                dtype=self._meta['dtype'],
+                dtype=self._meta["dtype"],
                 mode=self.mode,
-                compression=meta['compression'],
-                chunksize=meta['chunksize'],
+                compression=meta["compression"],
+                chunksize=meta["chunksize"],
                 verbose=self.verbose,
             )
         else:
             self._col = CColumn(
                 self.array_filename,
-                dtype=self._meta['dtype'],
+                dtype=self._meta["dtype"],
                 mode=self.mode,
                 # verbose=self.verbose,
             )
@@ -323,7 +326,7 @@ class Column(object):
             The new number of rows.
         """
 
-        self._check_mode_is_write('resize column')
+        self._check_mode_is_write("resize column")
 
         if isinstance(self._col, CColumn):
             nrows_old = self.nrows
@@ -332,13 +335,13 @@ class Column(object):
             self._col.resize(nrows)
 
             # can fill with user defined value
-            if nrows > nrows_old and 'fill_value' in self._meta:
-                self[nrows_old:] = self._meta['fill_value']
+            if nrows > nrows_old and "fill_value" in self._meta:
+                self[nrows_old:] = self._meta["fill_value"]
         else:
             if nrows < self.nrows:
-                raise NotImplementedError('cannot shrink compressed columns')
+                raise NotImplementedError("cannot shrink compressed columns")
 
-            self._col.extend(nrows, fill=self._meta.get('fill_value'))
+            self._col.extend(nrows, fill=self._meta.get("fill_value"))
 
         if self.has_index:
             self.update_index()
@@ -352,7 +355,7 @@ class Column(object):
         compressed data is stored temporarily in a separate file.  Running
         vacuum combines all data back together in a single contiguous file.
         """
-        self._check_mode_is_write('vacuum')
+        self._check_mode_is_write("vacuum")
 
         if isinstance(self._col, Chunks):
             self._col.vacuum()
@@ -369,7 +372,7 @@ class Column(object):
             Data to append to the file.  If the column data already exists,
             the data types must match exactly.
         """
-        self._check_mode_is_write('append data')
+        self._check_mode_is_write("append data")
 
         self._check_data(data)
 
@@ -389,7 +392,7 @@ class Column(object):
             col[5:10] = 25
             col[35:88] = 99
         """
-        self._check_mode_is_write('enter updating context')
+        self._check_mode_is_write("enter updating context")
 
         self._is_updating = True
         self._vacuum_on_exit = vacuum
@@ -397,13 +400,13 @@ class Column(object):
 
     def _check_data(self, data):
         if data.dtype.names is not None:
-            raise ValueError('column data cannot have fields')
+            raise ValueError("column data cannot have fields")
 
         if not isinstance(data, np.ndarray):
-            raise ValueError(f'data must be a numpy array, got {type(data)}')
+            raise ValueError(f"data must be a numpy array, got {type(data)}")
 
         if data.ndim > 1:
-            raise ValueError('data must be one dimensional array')
+            raise ValueError("data must be one dimensional array")
 
     # def _check_data_dtype(self, data):
     #     dt = data.dtype
@@ -413,7 +416,7 @@ class Column(object):
     #         raise ValueError(f"data dtype '{dt}' != '{mydt}'")
 
     def _get_rec_view(self, data):
-        view_dtype = [('data', data.dtype.descr[0][1])]
+        view_dtype = [("data", data.dtype.descr[0][1])]
         return data.view(view_dtype)
 
     def __getitem__(self, arg):
@@ -428,7 +431,7 @@ class Column(object):
         Item lookup method, e.g. col[..] meaning slices or
         sequences, etc.
         """
-        self._check_mode_is_write('update column data')
+        self._check_mode_is_write("update column data")
 
         self._col[arg] = values
 
@@ -452,9 +455,9 @@ class Column(object):
         """
         Attempt to delete the data file associated with this column
         """
-        self._check_mode_is_write('delete column data')
+        self._check_mode_is_write("delete column data")
 
-        if hasattr(self, '_col'):
+        if hasattr(self, "_col"):
             del self._col
 
         super()._delete()
@@ -478,7 +481,7 @@ class Column(object):
         raises an exception of the index isn't available
         """
         if not self.has_index:
-            raise ValueError('no index exists for column %s' % self.name)
+            raise ValueError("no index exists for column %s" % self.name)
 
     def create_index(self, overwrite=False):
         """
@@ -494,12 +497,12 @@ class Column(object):
         from tempfile import TemporaryDirectory
         import shutil
 
-        self._check_mode_is_write('create an index')
+        self._check_mode_is_write("create an index")
 
         if self.has_index and not overwrite:
             raise RuntimeError(
-                f'column {self.name} already has an index.  Send '
-                f' overwrite=True or use update_index()'
+                f"column {self.name} already has an index.  Send "
+                f" overwrite=True or use update_index()"
             )
 
         self.delete_index()
@@ -510,9 +513,9 @@ class Column(object):
         size_gb = self.index_size_gb + self.data_size_gb * 2
 
         if self.verbose:
-            print('creating index for column', self.name)
-            print(f'cache mem: {self.cache_mem}')
-            print(f'required gb: {size_gb:.3g}')
+            print("creating index for column", self.name)
+            print(f"cache mem: {self.cache_mem}")
+            print(f"required gb: {size_gb:.3g}")
 
         with TemporaryDirectory(dir=self.dir) as tmpdir:
             ifile = os.path.join(
@@ -523,20 +526,19 @@ class Column(object):
                 tmpdir,
                 os.path.basename(self.sorted_filename),
             )
-            with CColumn(ifile, mode='w+', dtype=self.index_dtype) as ifobj:
-                with CColumn(sfile, mode='w+', dtype=self.dtype) as sfobj:
-
+            with CColumn(ifile, mode="w+", dtype=self.index_dtype) as ifobj:
+                with CColumn(sfile, mode="w+", dtype=self.dtype) as sfobj:
                     if size_gb < self.cache_mem_gb:
                         self._write_index_memory(ifobj, sfobj)
                     else:
                         self._write_index_mergesort(tmpdir, ifobj, sfobj)
 
                     if self.verbose:
-                        print(f'  {ifile} -> {self.index_filename}')
+                        print(f"  {ifile} -> {self.index_filename}")
                     shutil.move(ifile, self.index_filename)
 
                     if self.verbose:
-                        print(f'  {sfile} -> {self.sorted_filename}')
+                        print(f"  {sfile} -> {self.sorted_filename}")
                     shutil.move(sfile, self.sorted_filename)
 
         self._write_index1()
@@ -544,16 +546,16 @@ class Column(object):
 
     def _write_index_memory(self, ifobj, sfobj):
         if self.verbose:
-            print(f'creating index for {self.name} in memory')
+            print(f"creating index for {self.name} in memory")
 
         data = self[:]
         if self.verbose:
-            print('  sorting')
+            print("  sorting")
 
         sort_index = data.argsort()
 
         if self.verbose:
-            print('  writing')
+            print("  writing")
 
         ifobj.append(sort_index)
         sfobj.append(data[sort_index])
@@ -562,7 +564,7 @@ class Column(object):
         from .mergesort import create_mergesort_index
 
         if self.verbose:
-            print(f'creating index for {self.name} with mergesort on disk')
+            print(f"creating index for {self.name} with mergesort on disk")
 
         chunksize_bytes = int(self.cache_mem_gb * 1024**3)
 
@@ -592,35 +594,32 @@ class Column(object):
         if nchunks < 10:
             rows = np.arange(self.nrows)
         else:
-            rows = np.ones(nchunks+1, dtype='i8')
+            rows = np.ones(nchunks + 1, dtype="i8")
             rows[0:-1] = np.arange(0, self.nrows, chunksize_rows)
             rows[-1] = self.nrows - 1
 
         output = np.zeros(rows.size, dtype=self.index1_dtype)
-        output['index'] = rows
+        output["index"] = rows
 
         if self.verbose:
-            print('  reading index1 values from:', self.sorted_filename)
+            print("  reading index1 values from:", self.sorted_filename)
         with CColumn(self.sorted_filename, dtype=self.dtype) as scol:
-            output['value'] = scol[rows]
+            output["value"] = scol[rows]
 
         if self.verbose:
-            print('  writing:', self.index1_filename)
-        with CColumn(
-                self.index1_filename,
-                mode='w+',
-                dtype=self.index1_dtype) as i1col:
+            print("  writing:", self.index1_filename)
+        with CColumn(self.index1_filename, mode="w+", dtype=self.index1_dtype) as i1col:
             i1col.append(output)
 
     def update_index(self):
         """
         Recreate the index for this column.
         """
-        self._check_mode_is_write('update an index')
+        self._check_mode_is_write("update an index")
 
         if not self.has_index:
             raise RuntimeError(
-                f'Cannot update non-existent index for column {self.name}'
+                f"Cannot update non-existent index for column {self.name}"
             )
 
         self.create_index(overwrite=True)
@@ -630,7 +629,8 @@ class Column(object):
         Delete the index for this column if it exists
         """
         import os
-        self._check_mode_is_write('delete an index')
+
+        self._check_mode_is_write("delete an index")
 
         if self.has_index:
             names = [
@@ -656,24 +656,19 @@ class Column(object):
 
         if os.path.exists(self.index_filename):
             if not os.path.exists(self.sorted_filename):
-                raise RuntimeError(
-                    f'missing sorted file {self.sorted_filename}'
-                )
+                raise RuntimeError(f"missing sorted file {self.sorted_filename}")
 
             if not os.path.exists(self.index_filename):
-                raise RuntimeError(
-                    f'missing index file {self.index_filename}'
-                )
+                raise RuntimeError(f"missing index file {self.index_filename}")
 
             if not os.path.exists(self.index1_filename):
-                raise RuntimeError(
-                    f'missing index1 file {self.index1_filename}'
-                )
+                raise RuntimeError(f"missing index1 file {self.index1_filename}")
 
             self._has_index = True
             self._index = CColumn(self.index_filename, dtype=self.index_dtype)
             self._index1 = CColumn(
-                self.index1_filename, dtype=self.index1_dtype,
+                self.index1_filename,
+                dtype=self.index1_dtype,
             )
             self._sorted = CColumn(self.sorted_filename, dtype=self.dtype)
 
@@ -708,7 +703,7 @@ class Column(object):
         ind_list = []
         ntot = 0
         for value in values:
-            ind = (self == value)
+            ind = self == value
             ntot += ind.size
             if ind.size > 0:
                 ind_list.append(ind)
@@ -717,13 +712,13 @@ class Column(object):
             return ind_list[0]
 
         if len(ind_list) == 0:
-            ind_total = np.zeros(0, dtype='i8')
+            ind_total = np.zeros(0, dtype="i8")
         else:
-            ind_total = np.zeros(ntot, dtype='i8')
+            ind_total = np.zeros(ntot, dtype="i8")
 
             start = 0
             for ind in ind_list:
-                ind_total[start:start+ind.size] = ind
+                ind_total[start : start + ind.size] = ind
                 start += ind.size
 
         return Indices(ind_total)
@@ -745,14 +740,15 @@ class Column(object):
         bisect on the hierarch index1 then possibly the full index
         """
         import bisect
+
         idata = self._index1_data
-        i1 = bisect.bisect_right(idata['value'], x=val)
+        i1 = bisect.bisect_right(idata["value"], x=val)
 
         if i1 == 0 or i1 == idata.size:
             sind = i1
         else:
-            start = idata['index'][i1 - 1]
-            end = idata['index'][i1]
+            start = idata["index"][i1 - 1]
+            end = idata["index"][i1]
 
             sind = _bisect_right_func(
                 func=self._read_one_from_index,
@@ -768,14 +764,15 @@ class Column(object):
         bisect on the hierarch index1 then possibly the full index
         """
         import bisect
+
         idata = self._index1_data
-        i1 = bisect.bisect_left(idata['value'], x=val)
+        i1 = bisect.bisect_left(idata["value"], x=val)
 
         if i1 == 0 or i1 == idata.size:
             sind = i1
         else:
-            start = idata['index'][i1 - 1]
-            end = idata['index'][i1]
+            start = idata["index"][i1 - 1]
+            end = idata["index"][i1]
 
             sind = _bisect_left_func(
                 func=self._read_one_from_index,
@@ -838,7 +835,7 @@ class Column(object):
 
         return Indices(indices)
 
-    def between(self, low, high, interval='[]'):
+    def between(self, low, high, interval="[]"):
         """
         Find all entries in the range low,high, inclusive by default.
 
@@ -879,43 +876,43 @@ class Column(object):
 
         self.verify_index_available()
 
-        if interval == '[]':
+        if interval == "[]":
             # bisect_left returns i such that data[i:] are all strictly >= val
             ilow = self._bisect_left(low)
 
             # bisect_right returns i such that data[:i] are all strictly <= val
             ihigh = self._bisect_right(high)
 
-        elif interval == '(]':
+        elif interval == "(]":
             # bisect_right returns i such that data[i:] are all strictly > val
             ilow = self._bisect_right(low)
 
             # bisect_right returns i such that data[:i] are all strictly <= val
             ihigh = self._bisect_right(high)
 
-        elif interval == '[)':
+        elif interval == "[)":
             # bisect_left returns i such that data[:i] are all strictly >= val
             ilow = self._bisect_left(low)
 
             # bisect_left returns i such that data[:i] are all strictly < val
             ihigh = self._bisect_left(high)
 
-        elif interval == '()':
+        elif interval == "()":
             # bisect_right returns i such that data[i:] are all strictly > val
             ilow = self._bisect_right(low)
 
             # bisect_left returns i such that data[:i] are all strictly < val
             ihigh = self._bisect_left(high)
         else:
-            raise ValueError('bad interval type: %s' % interval)
+            raise ValueError("bad interval type: %s" % interval)
 
         indices = self._index[ilow:ihigh]
 
         return Indices(indices)
 
     def _check_mode_is_write(self, action):
-        if self.mode != 'r+':
-            raise IOError(f'cannot {action} in read only mode')
+        if self.mode != "r+":
+            raise IOError(f"cannot {action} in read only mode")
 
     def __enter__(self):
         self._is_updating = True
@@ -931,31 +928,31 @@ class Column(object):
             self.vacuum()
 
     def __repr__(self):
-        indent = '  '
+        indent = "  "
 
         s = []
         if self.name is not None:
-            s += ['name: %s' % self.name]
+            s += ["name: %s" % self.name]
 
-        s += ['filename: %s' % self.array_filename]
-        s += ['type: array']
-        s += ['index: %s' % self.has_index]
+        s += ["filename: %s" % self.array_filename]
+        s += ["type: array"]
+        s += ["index: %s" % self.has_index]
 
-        if 'compression' in self.meta and self.meta['compression']:
-            c = self.meta['compression']
-            s += ['compression:']
-            s += ['    cname: %s' % c['cname']]
-            s += ['    clevel: %s' % c['clevel']]
-            s += ['    shuffle: %s' % c['shuffle']]
-            s += ['chunksize: %s' % self._col.chunksize]
+        if "compression" in self.meta and self.meta["compression"]:
+            c = self.meta["compression"]
+            s += ["compression:"]
+            s += ["    cname: %s" % c["cname"]]
+            s += ["    clevel: %s" % c["clevel"]]
+            s += ["    shuffle: %s" % c["shuffle"]]
+            s += ["chunksize: %s" % self._col.chunksize]
 
         c_dtype = self.dtype.descr[0][1]
-        s += ['dtype: %s' % c_dtype]
+        s += ["dtype: %s" % c_dtype]
 
-        s += ['nrows: %s' % self.nrows]
+        s += ["nrows: %s" % self.nrows]
 
         s = [indent + tmp for tmp in s]
-        s = ['Column: '] + s
+        s = ["Column: "] + s
 
         s = "\n".join(s)
         return s

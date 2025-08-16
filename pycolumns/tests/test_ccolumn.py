@@ -1,7 +1,7 @@
 import pytest
 
 
-@pytest.mark.parametrize('dtype', ['i8', 'f4', 'U3'])
+@pytest.mark.parametrize("dtype", ["i8", "f4", "U3"])
 def test_column(dtype):
     import os
     import tempfile
@@ -13,25 +13,25 @@ def test_column(dtype):
 
     rng = np.random.RandomState(seed)
 
-    if dtype[0] == 'i':
+    if dtype[0] == "i":
         data = np.arange(num, dtype=dtype)
-    elif dtype[0] == 'U':
+    elif dtype[0] == "U":
         data = np.zeros(num, dtype=dtype)
         data[:] = [str(i) for i in range(num)]
     else:
         data = rng.uniform(size=num).astype(dtype)
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        fname = os.path.join(tmpdir, 'test.col')
-        with Column(fname, dtype=data.dtype, mode='w+', verbose=True) as col:
-            print('-' * 70)
-            print('before append')
+        fname = os.path.join(tmpdir, "test.col")
+        with Column(fname, dtype=data.dtype, mode="w+", verbose=True) as col:
+            print("-" * 70)
+            print("before append")
             print(col)
 
             col.append(data)
 
-            print('-' * 70)
-            print('before append')
+            print("-" * 70)
+            print("before append")
             print(col)
 
             indata = col[:]
@@ -107,17 +107,17 @@ def test_column(dtype):
             check = col[3]
             assert check == one[0]
 
-            two = data[3:3+2]
+            two = data[3 : 3 + 2]
             start = 15
             col.write_at(two, start)
-            check = col[start:start+2]
+            check = col[start : start + 2]
             assert np.all(check == two)
 
             col[5] = data[0]
             assert np.all(col[5] == data[0])
 
-            col[:data.size] = data
-            assert np.all(col[:data.size] == data)
+            col[: data.size] = data
+            assert np.all(col[: data.size] == data)
 
             # sorted rows
             rows = [0, 2, 5]

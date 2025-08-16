@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import Dict, List, Optional, Union, Any
 import numpy as np
 from . import util
 from .defaults import DEFAULT_COMPRESSION, DEFAULT_CHUNKSIZE
@@ -62,14 +65,15 @@ class TableSchema(dict):
         'ra': {'dtype': '<f8'}
     }
     """
-    def __init__(self, schemas=None):
+
+    def __init__(self, schemas: Optional[List[ColumnSchema]] = None) -> None:
         if schemas is None:
             return
 
         for schema in schemas:
             self.add_column(schema)
 
-    def add_column(self, schema):
+    def add_column(self, schema: ColumnSchema) -> None:
         """
         add a column schema
         """
@@ -77,9 +81,12 @@ class TableSchema(dict):
 
     @classmethod
     def from_array(
-        cls, array, compression=None, chunksize=DEFAULT_CHUNKSIZE,
-        fill_value=None,
-    ):
+        cls,
+        array: Union[np.ndarray, Dict[str, np.ndarray]],
+        compression: Optional[Union[bool, List[str], Dict[str, Any]]] = None,
+        chunksize: Union[str, int, Dict[str, Union[str, int]]] = DEFAULT_CHUNKSIZE,
+        fill_value: Optional[Dict[str, Any]] = None,
+    ) -> TableSchema:
         """
         Convert an array with fields to a TableSchema
 
@@ -112,28 +119,24 @@ class TableSchema(dict):
 
         table_schema = TableSchema()
         for name in names:
-            keys = {}
+            keys: Dict[str, Any] = {}
             comp = _get_column_compression(compression, name)
             if comp:
                 # Note, if comp is a dict, it gets defaults set for
                 # non specified compression entries in ColumnSchema
-                keys['compression'] = comp
-                keys['chunksize'] = _get_column_chunksize(chunksize, name)
+                keys["compression"] = comp
+                keys["chunksize"] = _get_column_chunksize(chunksize, name)
 
             if fill_value is not None and name in fill_value:
-                keys['fill_value'] = fill_value[name]
+                keys["fill_value"] = fill_value[name]
 
-            schema = ColumnSchema(
-                name=name,
-                dtype=array[name].dtype,
-                **keys
-            )
+            schema = ColumnSchema(name=name, dtype=array[name].dtype, **keys)
             table_schema.add_column(schema)
 
         return table_schema
 
     @classmethod
-    def from_schema(cls, sdict):
+    def from_schema(cls, sdict: Union[Dict[str, Any], TableSchema]) -> TableSchema:
         """
         Convert a TableSchema or dict to a TableSchema
 
@@ -160,14 +163,13 @@ class TableSchema(dict):
 
         table_schema = TableSchema()
         for name, dschema in sdict.items():
-
             schema = ColumnSchema(name=name, **dschema)
             table_schema.add_column(schema)
 
         return table_schema
 
     @classmethod
-    def from_columns(cls, schemas):
+    def from_columns(cls, schemas: List[ColumnSchema]) -> TableSchema:
         """
         Construct a new table Schema from a list of ColumnSchema objects
 
@@ -215,14 +217,16 @@ class ColumnSchema(dict):
         If sent and not None, resized columns get this fill value.  Default
         is zero/empty string (bit zeros)
     """
+
     def __init__(
         self,
-        name,
-        dtype,
-        compression=None,
-        chunksize=DEFAULT_CHUNKSIZE,
-        fill_value=None,
-    ):
+        name: str,
+        dtype: Union[str, np.dtype],
+        compression: Optional[Union[bool, Dict[str, Any]]] = None,
+        chunksize: Union[str, int] = DEFAULT_CHUNKSIZE,
+        fill_value: Optional[Any] = None,
+        **kwargs: Any,
+    ) -> None:
         self._name = name
         schema = _make_array_schema_dict(
             dtype=dtype,
@@ -231,9 +235,11 @@ class ColumnSchema(dict):
             fill_value=fill_value,
         )
         self.update(schema)
+        # Add any additional keyword arguments
+        self.update(kwargs)
 
     @property
-    def name(self):
+    def name(self) -> str:
         """
         get the column name
         """
@@ -241,27 +247,31 @@ class ColumnSchema(dict):
 
 
 def _make_array_schema_dict(
-    dtype,
-    compression=None,
-    chunksize=DEFAULT_CHUNKSIZE,
-    fill_value=None,
-):
-    schema = {
-        'dtype': np.dtype(dtype).str,
+    dtype: Union[str, np.dtype],
+    compression: Optional[Union[bool, Dict[str, Any]]] = None,
+    chunksize: Union[str, int] = DEFAULT_CHUNKSIZE,
+    fill_value: Optional[Any] = None,
+) -> Dict[str, Any]:
+    schema: Dict[str, Any] = {
+        "dtype": np.dtype(dtype).str,
     }
     if fill_value is not None:
-        schema['fill_value'] = fill_value
+        schema["fill_value"] = fill_value
 
     if compression:
-        schema['chunksize'] = chunksize
-        schema['compression'] = DEFAULT_COMPRESSION.copy()
+        schema["chunksize"] = chunksize
+        comp_dict = DEFAULT_COMPRESSION.copy()
         if compression is not True:
-            schema['compression'].update(compression)
+            if isinstance(compression, dict):
+                comp_dict.update(compression)
+        schema["compression"] = comp_dict
 
     return schema
 
 
-def _get_column_compression(compression, name):
+def _get_column_compression(
+    compression: Optional[Union[bool, List[str], Dict[str, Any]]], name: str
+) -> Optional[Union[bool, Dict[str, Any]]]:
     """
     extract compression info for a specified column
 
@@ -278,27 +288,21 @@ def _get_column_compression(compression, name):
     -------
     None or a dict
     """
-    if hasattr(compression, 'keys'):
+    if compression is None:
+        return None
+    elif isinstance(compression, dict):
         tcomp = compression.get(name)
-        if tcomp:
-            comp = tcomp
-        else:
-            comp = None
-    elif _has_len(compression):
-        if name in compression:
-            comp = True
-        else:
-            comp = None
+        return tcomp if tcomp else None
+    elif isinstance(compression, (list, tuple)):
+        return True if name in compression else None
     else:
-        if not compression:
-            comp = None
-        else:
-            comp = True
-
-    return comp
+        # bool case
+        return True if compression else None
 
 
-def _get_column_chunksize(chunksize, name):
+def _get_column_chunksize(
+    chunksize: Union[str, int, Dict[str, Union[str, int]]], name: str
+) -> Union[str, int]:
     """
     extract chunksize for a specified column
 
@@ -314,18 +318,16 @@ def _get_column_chunksize(chunksize, name):
     -------
     str or number
     """
-    if hasattr(chunksize, 'keys'):
+    if isinstance(chunksize, dict):
         return chunksize.get(name, DEFAULT_CHUNKSIZE)
     else:
         # catch a bug
-        if hasattr(chunksize, 'append') or hasattr(chunksize, 'discard'):
-            raise ValueError(
-                'expected dict, str, or number, got {type(chunksize)}'
-            )
+        if hasattr(chunksize, "append") or hasattr(chunksize, "discard"):
+            raise ValueError(f"expected dict, str, or number, got {type(chunksize)}")
         return chunksize
 
 
-def _has_len(x):
+def _has_len(x: Any) -> bool:
     try:
         len(x)
         ret = True
