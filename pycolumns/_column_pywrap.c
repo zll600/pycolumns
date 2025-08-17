@@ -6,7 +6,9 @@
    - maybe more error checking internally
    - printouts when verbose
 */
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+
+// See: https://numpy.org/doc/stable/reference/c-api/deprecations.html
+#define NPY_NO_DEPRECATED_API NPY_2_0_API_VERSION
 
 // #include <string.h>
 // #include <math.h>

@@ -41,18 +41,18 @@ def test_access(compression):
     data, sub_data, sub2_data = get_data(rng)
 
     if compression:
-        ccols = ["id", "scol"]
+        compression_cols = ["id", "scol"]
     else:
-        ccols = None
+        compression_cols = None
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        cdir = os.path.join(tmpdir, "test.cols")
+        columns_dir = os.path.join(tmpdir, "test.cols")
 
         # Create a new Columns store with data in the root
         cols = Columns.create_from_array(
-            cdir,
+            columns_dir,
             data=data,
-            compression=ccols,
+            compression=compression_cols,
             verbose=True,
         )
 
@@ -235,7 +235,7 @@ def test_access(compression):
         cols["sub1/sub2/sub3/x"]
 
         # open new in read only mode
-        rocols = Columns(cdir)
+        rocols = Columns(columns_dir)
         rocols["sub1/"]["dec"]
         rocols["sub1/dec"]
         rocols["sub1/sub2/"]

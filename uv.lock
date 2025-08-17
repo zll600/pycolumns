@@ -28,6 +28,21 @@ wheels = [
 ]
 
 [[package]]
+name = "fitsio"
+version = "1.2.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/72/8c/60ad8b00056a2123e98f40c0f49c4680734298708b69dc5e3822027ced1b/fitsio-1.2.6.tar.gz", hash = "sha256:33b0cdbc53f1779e3d0a765d5ab474baf6c86eccf7c21375a07671f7b09b33af", size = 4524342, upload-time = "2025-05-15T12:58:59.481Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/98/c8/5253b349e6d29a2fa4a774c17ccf92734d31cde06c62993b623a5748d73f/fitsio-1.2.6-cp313-cp313-macosx_13_0_x86_64.whl", hash = "sha256:f6e91a8171a066c006969df7dbef3bdf049a78b081bd892c96e58c964ac3143e", size = 727518, upload-time = "2025-05-15T12:58:46.848Z" },
+    { url = "https://files.pythonhosted.org/packages/1a/e0/a5ccff1239a140ad26eb8e5e8d17a051218701d55a97cf21a0626de99097/fitsio-1.2.6-cp313-cp313-macosx_14_0_arm64.whl", hash = "sha256:b9015cf5d3d6013259672e7e63d6959b4e21fbdcd5a38bd5ff206ef427a77458", size = 728630, upload-time = "2025-05-15T12:58:48.241Z" },
+    { url = "https://files.pythonhosted.org/packages/67/d1/34c89883a8f84814a7ede38b341bce5ca3b836a962c2116ea14c5ff0d875/fitsio-1.2.6-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1d5741663d40263ebabfdda28ec4b72e68defce5d8dd695c2dd2332462f85dda", size = 836787, upload-time = "2025-05-15T12:58:50.248Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/88/620e8d03b76e4d74f0ad175642f0bc265b37d4b4a6857e31aee3aad70d92/fitsio-1.2.6-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:de22ca09bf2f7cfb2b7999484c9aca5fc552c787932861ce116d561538eb90b4", size = 862780, upload-time = "2025-05-15T12:58:52.087Z" },
+]
+
+[[package]]
 name = "iniconfig"
 version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -164,6 +179,7 @@ name = "pycolumns"
 source = { editable = "." }
 dependencies = [
     { name = "blosc" },
+    { name = "fitsio" },
     { name = "numpy" },
 ]
 
@@ -180,6 +196,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "blosc", specifier = ">=1.11.3" },
+    { name = "fitsio", specifier = ">=1.2.6" },
     { name = "numpy", specifier = ">=2.3.2" },
 ]
 

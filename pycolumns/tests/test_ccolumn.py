@@ -34,65 +34,65 @@ def test_column(dtype):
             print("before append")
             print(col)
 
-            indata = col[:]
-            assert np.all(indata == data)
+            inner_data = col[:]
+            assert np.all(inner_data == data)
 
-            indata = col[2:8]
-            assert np.all(indata == data[2:8])
+            inner_data = col[2:8]
+            assert np.all(inner_data == data[2:8])
 
-            indata = col[2:18:2]
-            assert np.all(indata == data[2:18:2])
+            inner_data = col[2:18:2]
+            assert np.all(inner_data == data[2:18:2])
 
-            ind = [3, 5, 7]
-            indata = col[ind]
-            assert np.all(indata == data[ind])
+            indices = [3, 5, 7]
+            inner_data = col[indices]
+            assert np.all(inner_data == data[indices])
 
             # out of order
-            ind = [7, 3, 5]
-            indata = col[ind]
-            assert np.all(indata == data[ind])
+            indices = [7, 3, 5]
+            inner_data = col[indices]
+            assert np.all(inner_data == data[indices])
 
-            ind = 5
-            indata = col[ind]
-            assert np.all(indata == data[ind])
+            indices = 5
+            inner_data = col[indices]
+            assert np.all(inner_data == data[indices])
 
             s = slice(2, 8)
-            indata = np.zeros(s.stop - s.start, dtype=data.dtype)
-            col.read_slice_into(indata, s)
-            assert np.all(indata == data[s])
+            inner_data = np.zeros(s.stop - s.start, dtype=data.dtype)
+            col.read_slice_into(inner_data, s)
+            assert np.all(inner_data == data[s])
 
             s = slice(-3, -1)
-            indata = np.zeros(2, dtype=data.dtype)
-            col.read_slice_into(indata, s)
-            assert np.all(indata == data[s])
+            inner_data = np.zeros(2, dtype=data.dtype)
+            col.read_slice_into(inner_data, s)
+            assert np.all(inner_data == data[s])
 
-            ind = [3, 5, 7]
-            indata = np.zeros(len(ind), dtype=data.dtype)
-            col.read_rows_into(indata, ind)
-            assert np.all(indata == data[ind])
+            indices = [3, 5, 7]
+            inner_data = np.zeros(len(indices), dtype=data.dtype)
+            col.read_rows_into(inner_data, indices)
+            assert np.all(inner_data == data[indices])
 
-            ind = 6
-            indata = np.zeros(1, dtype=data.dtype)
-            col.read_row_into(indata, ind)
-            assert np.all(indata[0] == data[ind])
+            indices = 6
+            inner_data = np.zeros(1, dtype=data.dtype)
+            col.read_row_into(inner_data, indices)
+            assert np.all(inner_data[0] == data[indices])
 
             # cannot read into array scalar
             with pytest.raises(ValueError):
-                ind = 6
-                indata = np.zeros(1, dtype=data.dtype)
-                col.read_row_into(indata[0], ind)
+                indices = 6
+                inner_data = np.zeros(1, dtype=data.dtype)
+                col.read_row_into(inner_data[0], indices)
 
             # mismatch in ind size and data size
             with pytest.raises(ValueError):
-                ind = [3, 5, 7]
-                indata = np.zeros(5, dtype=data.dtype)
-                col.read_rows_into(indata, ind)
+                indices = [3, 5, 7]
+                inner_data = np.zeros(5, dtype=data.dtype)
+                col.read_rows_into(inner_data, indices)
 
             # mismatch in ind size and data size
             with pytest.raises(ValueError):
-                ind = 3
-                indata = np.zeros(5, dtype=data.dtype)
-                col.read_row_into(indata, ind)
+                indices = 3
+                inner_data = np.zeros(5, dtype=data.dtype)
+                col.read_row_into(inner_data, indices)
 
             col.append(data)
             assert col.nrows == data.size * 2

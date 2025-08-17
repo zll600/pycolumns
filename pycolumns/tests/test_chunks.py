@@ -26,6 +26,12 @@ def test_chunks(compression, dtype):
     row_chunksize = 10
     chunksize = f"{row_chunksize}r"
 
+    # Convert True to None to use default compression settings
+    if compression is True:
+        compression_param = None  # Will use default compression
+    else:
+        compression_param = compression  # False or dict
+
     with tempfile.TemporaryDirectory() as tmpdir:
         fname = os.path.join(tmpdir, "test.array")
         chunks_fname = os.path.join(tmpdir, "test.chunks")
@@ -40,7 +46,7 @@ def test_chunks(compression, dtype):
             chunks_fname,
             dtype=data.dtype,
             chunksize=chunksize,
-            compression=compression,
+            compression=compression_param,
             mode="w+",
             verbose=True,
         ) as col:

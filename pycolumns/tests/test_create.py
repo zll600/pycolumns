@@ -6,13 +6,13 @@ import pytest
 @pytest.mark.parametrize("cache_mem", ["1g", "10k"])
 @pytest.mark.parametrize("compression", [False, True])
 @pytest.mark.parametrize("verbose", [True, False])
-@pytest.mark.parametrize("fromdict", [False, True])
+@pytest.mark.parametrize("from_dict", [False, True])
 @pytest.mark.parametrize("from_array", [False, True])
 def test_create(
-    cache_mem: str, compression: bool, verbose: bool, fromdict: bool, from_array: bool
+    cache_mem: str, compression: bool, verbose: bool, from_dict: bool, from_array: bool
 ) -> None:
     """
-    cache_mem of 0.01 will force use of mergesort
+    cache_mem of 0.01 will force use of merge_sort
     """
     import os
     import tempfile
@@ -32,18 +32,18 @@ def test_create(
     data["scol"] = [str(val) for val in data["id"]]
 
     if compression:
-        ccols = ["id", "scol"]
+        compression_cols = ["id", "scol"]
     else:
-        ccols = None
+        compression_cols = None
 
-    if fromdict:
+    if from_dict:
         ddict = {}
         if data.dtype.names is not None:
             for name in data.dtype.names:
                 ddict[name] = data[name]
-        schema = TableSchema.from_array(ddict, compression=ccols)
+        schema = TableSchema.from_array(ddict, compression=compression_cols)
     else:
-        schema = TableSchema.from_array(data, compression=ccols)
+        schema = TableSchema.from_array(data, compression=compression_cols)
 
     print(schema)
 
@@ -55,14 +55,14 @@ def test_create(
         assert cols.verbose == verbose
         assert cols.cache_mem == cache_mem
 
-        if fromdict:
+        if from_dict:
             append_data = ddict
         else:
             append_data = data
 
         # created in root
         if from_array:
-            cols.from_array(data=append_data, compression=ccols)
+            cols.from_array(data=append_data, compression=compression_cols)
         else:
             cols.create_table(schema=schema)
             cols.append(append_data)
@@ -87,7 +87,7 @@ def test_create(
             for name in data.dtype.names:
                 assert cols[name].size == num
                 assert cols[name].verbose == verbose
-            assert cols[name].cache_mem == cache_mem
+                assert cols[name].cache_mem == cache_mem
 
         indata = cols.read()
         if data.dtype.names is not None:

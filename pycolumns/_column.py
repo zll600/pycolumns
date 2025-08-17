@@ -305,14 +305,14 @@ class Column(_column_pywrap.Column):
             raise ValueError(f"input dtype {dtype} != file dtype {self.dtype}")
 
     def _set_nrows(self):
-        fsize = os.path.getsize(self.filename)
-        elsize = self.dtype.itemsize
+        file_size = os.path.getsize(self.filename)
+        element_size = self.dtype.itemsize
 
-        if fsize % elsize != 0:
+        if file_size % element_size != 0:
             raise ValueError(
-                f"file size {fsize} not a multiple of element size {elsize}"
+                f"file size {file_size} not a multiple of element size {element_size}"
             )
-        self._nrows = fsize // elsize
+        self._nrows = file_size // element_size
 
     def __enter__(self):
         return self
